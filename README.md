@@ -4,8 +4,9 @@
 *By MM7IBG — GPL v3*
 
 A remote HF station controller for the Icom IC-7300 via a Raspberry Pi, streaming bidirectional audio over TCP so you can run WSJT-X (or any digital mode software) from anywhere on your network.
-
-> ⚠️ **Pre-Alpha Software** — This project is in early development. The Python control script in particular is rough around the edges and may not work reliably. It was more of a proof of concept that got the job done. Use at your own risk, pull requests welcome, and don't blame me if your cat keys up on 40m. 73!
+All the solutins for linux did look really good but this is a 14 year old computer. This would be like using a 286 in the year 2000, and this is streaming audio over TCP not running lotus spreadsheets. And linux was either too new and slow or too old and had hamlib had no icom support.
+So FREEBSD-13.5-RELEASE-armv6 to the rescue!
+> ⚠️ **Pre-Alpha Software** — This project is in early development. The Python control script in particular is rough around the edges and may not work reliably. It was more of a proof of concept that got the job done. Use at your own risk, pull requests welcome, and don't blame me if your on a UK foundation license and your radio keys up on 60m. Or what's slightly less serious is that you mess up your inputs and outputs in wsjtx and end up transmitting a three six mafia album on 20m ft8 frequency 73!
 
 ---
 
@@ -206,7 +207,7 @@ Before running the full script, test CAT control works:
 rigctld -m 3073 -s 9600 -r /dev/cuaU0 &
 
 # In another terminal, test it
-rigctl -m 2 -r localhost:4532 get_freq
+rigctl -m 2 -r localhost:4532 f
 # Should return the current frequency e.g. 14074000
 
 rigctl -m 2 -r localhost:4532 get_mode
@@ -228,7 +229,7 @@ sleep 2
 # Record a few seconds from the IC-7300
 sox -t oss /dev/vdsp.0 -r 48000 -c 2 -b 16 -e signed-integer test.wav trim 0 5
 
-# Play it back
+# Play it back I'd suggest on windows tenacity 
 play test.wav
 
 # Clean up
@@ -247,27 +248,46 @@ DSP=/dev/dsp1
 VDSP=/dev/vdsp.0
 RATE=48000
 
+echo "starting rigctld"
+
 rigctld -m 3073 -s 9600 -r /dev/cuaU0 &
 
-virtual_oss -C 2 -c 2 -r $RATE -b 16 -s 4ms -f $DSP -m 0,0,1,1 -d vdsp.0 &
-sleep 2
 
+
+echo "Starting virtual_oss mixer..."
+virtual_oss -C 2 -c 2 -r $RATE -b 16 -s 4ms -f $DSP -m 0,0,1,1 -d vdsp.0 &
+VOSS_PID=$!
+sleep 2
 mixer vol 100:100
 mixer pcm 100:100
+if [ ! -e $VDSP ]; then
+  echo "ERROR: $VDSP did not get created"
+  exit 1
+fi
 
-# RX stream (Pi → Windows)
+echo "virtual_oss started, $VDSP is ready"
+
+echo "Starting RX stream on port 9000..."
 while true; do
   sox -t oss $VDSP -r $RATE -c 2 -b 16 -e signed-integer -t wav - | nc -l 9000
+  echo "RX client disconnected, restarting..."
   sleep 1
 done &
+RX_PID=$!
 
-# TX stream (Windows → Pi)
+echo "Starting TX stream on port 8766..."
 while true; do
-  nc -l 8766 | sox -q --buffer 1024 -t raw -r $RATE -c 1 -b 16 -e signed-integer - -t oss $VDSP vol 15.0
+  nc -l 8766 | play -q --buffer 1024 -t raw -r $RATE -c 1 -b 16 -e signed-integer  - -v 15.0  -t oss $VDSP
+  echo "TX client disconnected, restarting..."
   sleep 1
 done &
+TX_PID=$!
 
+echo "Audio streaming started."
+echo "virtual_oss PID=$VOSS_PID"
+echo "RX PID=$RX_PID  TX PID=$TX_PID"
 wait
+
 ```
 
 **Key settings:**
@@ -278,18 +298,7 @@ wait
 
 ---
 
-## SSH Setup
 
-```powershell
-# Generate key (Windows)
-ssh-keygen -t ed25519
-
-# Copy to Pi (one time, enter password when prompted)
-type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh freebsd@192.168.0.91 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
-
-# Test
-ssh freebsd@192.168.0.91 "echo works"
-```
 
 ---
 
@@ -299,9 +308,8 @@ ssh freebsd@192.168.0.91 "echo works"
 |---|---|
 | Mode | USB-D (for FT8/digital) |
 | Menu → Connectors → DATA MOD | USB |
-| Menu → Connectors → USB MOD Level | 50–80% |
-| RF POWER | Set to desired output |
-| Monitor | Power meter (not ALC — bypassed in USB-D) |
+| Menu → Connectors → USB MOD Level | 50%-60% mines on 60% I'll probably turn it to like 55 |
+| Menu → SWR |
 
 ---
 
