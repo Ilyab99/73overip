@@ -4,9 +4,10 @@
 *By MM7IBG — GPL v3*
 
 A remote HF station controller for the Icom IC-7300 via a Raspberry Pi, streaming bidirectional audio over TCP so you can run WSJT-X (or any digital mode software) from anywhere on your network.
-All the solutins for linux did look really good but this is a 14 year old computer. This would be like using a 286 in the year 2000, and this is streaming audio over TCP not running lotus spreadsheets. And linux was either too new and slow or too old and had hamlib had no icom support.
+All the solutins for linux did look really good but this is a 14 year old computer. This would be like using a 286 in the year 2000, and this is streaming audio over TCP not running lotus spreadsheets. And linux was either too new and slow or too old and had hamlib with no icom 7300 support.
 So FREEBSD-13.5-RELEASE-armv6 to the rescue!
-> ⚠️ **Pre-Alpha Software** — This project is in early development. The Python control script in particular is rough around the edges and may not work reliably. It was more of a proof of concept that got the job done. Use at your own risk, pull requests welcome, and don't blame me if your on a UK foundation license and your radio keys up on 60m. Or what's slightly less serious is that you mess up your inputs and outputs in wsjtx and end up transmitting a three six mafia album on 20m ft8 frequency 73!
+I wanted it to be completely headless, no X11 no vnc required.
+> ⚠️ **Pre-Alpha Software** — This project is in early development. The Python control script in particular is rough around the edges and may not work reliably. It was more of a proof of concept that got the job done. Use at your own risk, pull requests welcome, and don't blame me if your on a UK foundation license and your radio keys up on 60m. Or what's slightly less serious is that you mess up your inputs and outputs in wsjtx and end up transmitting a three six mafia album on 20m ft8 frequency which is somethign that could theoretically happen 73!
 
 ---
 
@@ -38,6 +39,14 @@ Clean as a whistle.
 ![WSJT-X decoding FT8 over the remote link](wsjt_screenshot.PNG)
 
 > *WSJT-X decoding 20m FT8 in real time, audio streamed live from the Pi to the Windows PC over TCP. The waterfall looks absolutely gorgeous — tight, clean signals with no artefacts from the streaming pipeline. VLC handles the RX stream on port 9000, ffmpeg pushes TX audio back to the Pi on port 8766. Stations across Europe decoding perfectly including Germany, Austria, Switzerland and Greece.*
+
+---
+
+## 15 Metres Goes Wild
+
+![15m FT8 QSO pile-up](15m_qsos.PNG)
+
+> *That's me — MM7IBG — getting absolutely stuck into 15 metres at 21.074 MHz FT8. The band was wide open and the QSO list on the right is just filling up. Contacts coming in from Latvia, Italy, Spain, Croatia, Czech Republic, Belarus, Russia and more. This is the whole point of the project — remote HF operating from your desk with a proper station on the other end of a TCP connection and a Raspberry Pi older than most of WSJT-X's git history.*
 
 ---
 
@@ -289,7 +298,7 @@ echo "RX PID=$RX_PID  TX PID=$TX_PID"
 wait
 
 ```
-
+I usually just run it as root which probably isn't that big of a security issue. If you wanted to just straight up disable internet on the PI and run it lan only. Or you could expose some ports and have it be trully portable. As in leave the radio and pi in a high place with electricity and control from home.
 **Key settings:**
 - `vol 15.0` on the TX chain gets the IC-7300 to full output power in USB-D mode
 - `mixer vol 100:100` and `mixer pcm 100:100` are essential — leaving these at 75% will give you only ~3W output
