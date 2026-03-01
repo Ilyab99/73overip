@@ -82,31 +82,29 @@ watchdog() {
         sleep 10
 
         # Check virtual_oss is still alive
-        if ! kill -0 $VOSS_PID 2>/dev/null; then
+        if ! pgrep -x virtual_oss > /dev/null 2>&1; then
             echo "WATCHDOG: virtual_oss died! Restarting..."
-            nohup virtual_oss -C 2 -c 2 -r $RATE -b 16 -s 4ms -f $DSP -m 0,0,1,1 -d vdsp.0 > /tmp/voss.log 2>&1 &
-            VOSS_PID=$!
+            virtual_oss -C 2 -c 2 -r $RATE -b 16 -s 4ms -f $DSP -m 0,0,1,1 -d vdsp.0 > /tmp/voss.log 2>&1 &
             sleep 3
             mixer vol 100:100
             mixer pcm 100:100
         fi
 
         # Check rigctld is still alive
-        if ! kill -0 $RIGCTLD_PID 2>/dev/null; then
+        if ! pgrep -x rigctld > /dev/null 2>&1; then
             echo "WATCHDOG: rigctld died! Restarting..."
-            nohup rigctld -m 3073 -s 9600 -r /dev/cuaU0 > /tmp/rigctld.log 2>&1 &
-            RIGCTLD_PID=$!
+            rigctld -m 3073 -s 9600 -r /dev/cuaU0 > /tmp/rigctld.log 2>&1 &
         fi
 
-        # Check RX loop is still alive
-        if ! kill -0 $RX_PID 2>/dev/null; then
+        # Check nc is listening on RX port
+        if ! sockstat -4 | grep -q ":$RX_PORT"; then
             echo "WATCHDOG: RX loop died! Restarting..."
             rx_loop &
             RX_PID=$!
         fi
 
-        # Check TX loop is still alive
-        if ! kill -0 $TX_PID 2>/dev/null; then
+        # Check nc is listening on TX port
+        if ! sockstat -4 | grep -q ":$TX_PORT"; then
             echo "WATCHDOG: TX loop died! Restarting..."
             tx_loop &
             TX_PID=$!
