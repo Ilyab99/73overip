@@ -67,7 +67,7 @@ tx_loop() {
         echo "TX waiting for connection on port $TX_PORT..."
         nc -l $TX_PORT 2>/dev/null \
             | play -q --buffer 1024 -t raw -r $RATE -c 1 -b 16 -e signed-integer - \
-              -v 15.0 -t oss $VDSP 2>/dev/null
+              -v 5.0 -t oss $VDSP 2>/dev/null
         echo "TX client disconnected at $(date), restarting in 1s..."
         # Make sure no zombie play/sox is left behind
         killall -9 play sox 2>/dev/null
